@@ -448,7 +448,7 @@ const Dashboard = () => {
           <Card sx={{ mb: 4, background: `linear-gradient(135deg, ${alpha('#667eea', 0.1)} 0%, ${alpha('#f56565', 0.1)} 100%)` }}>
             <CardContent>
               <Typography variant="h5" fontWeight={700}>Welcome back, {user?.name}! 👋</Typography>
-              <Typography variant="body2" color="text.secondary">Hover over the left sidebar to expand it</Typography>
+              <Typography variant="body2" color="text.secondary">Let's see the more features</Typography>
             </CardContent>
           </Card>
 
