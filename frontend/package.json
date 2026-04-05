@@ -1,33 +1,24 @@
 {
-  "name": "cyber-fraud-detection-advanced",
+  "name": "cyber-fraud-detection-frontend",
   "version": "2.0.0",
   "private": true,
   "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "react-router-dom": "^6.15.0",
+    "axios": "^1.5.0",
+    "react-hot-toast": "^2.4.1",
+    "framer-motion": "^10.16.4",
+    "recharts": "^2.8.0",
+    "@mui/material": "^5.14.10",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.14.10",
-    "@mui/material": "^5.14.10",
-    "@react-three/drei": "^9.88.0",
-    "@react-three/fiber": "^8.14.4",
-    "axios": "^1.5.0",
-    "chart.js": "^4.4.0",
-    "date-fns": "^2.30.0",
-    "framer-motion": "^10.16.4",
-    "react": "^18.2.0",
-    "react-chartjs-2": "^5.2.0",
-    "react-datepicker": "^4.18.0",
-    "react-dom": "^18.2.0",
-    "react-helmet-async": "^2.0.5",
-    "react-hot-toast": "^2.4.1",
     "react-icons": "^4.11.0",
-    "react-router-dom": "^6.15.0",
-    "react-scripts": "5.0.1",
-    "react-spring": "^9.7.5",
-    "react-table": "^7.8.0",
-    "react-toastify": "^9.1.3",
-    "recharts": "^2.15.4",
-    "socket.io-client": "^4.7.2",
-    "three": "^0.157.0"
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-toastify": "^9.1.3"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -36,20 +27,14 @@
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
-    "extends": [
-      "react-app"
-    ]
+    "extends": ["react-app"]
   },
   "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+  },
+  "engines": {
+    "node": "16.x",
+    "npm": "8.x"
   }
 }

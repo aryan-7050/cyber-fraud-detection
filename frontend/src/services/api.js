@@ -1,15 +1,19 @@
 import axios from 'axios';
 
-const API_URL = 'https://cyber-fraud-detection-4bdj.onrender.com/api';
+// Use environment variable or production URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://cyber-fraud-detection-backend.onrender.com/api';
+
+console.log('🔗 API URL:', API_URL);
 
 const api = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 30000,
 });
 
-// Request interceptor to add token
+// Request interceptor
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -18,12 +22,10 @@ api.interceptors.request.use(
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -36,7 +38,6 @@ api.interceptors.response.use(
     }
 );
 
-// Auth Services
 export const authService = {
     register: async (userData) => {
         const response = await api.post('/auth/register', userData);
@@ -67,7 +68,6 @@ export const authService = {
     }
 };
 
-// Transaction Services
 export const transactionService = {
     createTransaction: async (transactionData) => {
         const response = await api.post('/transactions', transactionData);
