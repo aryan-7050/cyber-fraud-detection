@@ -40,3 +40,5 @@ desktop.ini
 tmp/
 temp/
 *.tmp
+.vercel
+.env*.local
