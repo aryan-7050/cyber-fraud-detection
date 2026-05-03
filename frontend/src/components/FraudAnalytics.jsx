@@ -54,7 +54,6 @@ const FraudAnalytics = () => {
       const response = await transactionService.getUserTransactions({ limit: 100 });
       const transactions = response.transactions || [];
       
-      // Process data for charts
       const fraudTrend = processFraudTrend(transactions);
       const riskDistribution = processRiskDistribution(transactions);
       
@@ -123,13 +122,29 @@ const FraudAnalytics = () => {
     },
   ];
 
+  // Custom tooltip formatter for currency
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <Box sx={{ bgcolor: 'background.paper', p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
+          <Typography variant="body2" fontWeight={600}>{label}</Typography>
+          {payload.map((p, idx) => (
+            <Typography key={idx} variant="caption" color={p.color}>
+              {p.name}: ₹{p.value.toLocaleString('en-IN')}
+            </Typography>
+          ))}
+        </Box>
+      );
+    }
+    return null;
+  };
+
   return (
     <Box sx={{ p: 3, minHeight: '100vh', bgcolor: 'background.default' }}>
       <Typography variant="h4" sx={{ mb: 3, fontWeight: 700 }}>
         Fraud Analytics Dashboard
       </Typography>
 
-      {/* Metrics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {metrics.map((metric, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
@@ -167,7 +182,6 @@ const FraudAnalytics = () => {
         ))}
       </Grid>
 
-      {/* Charts */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <Card>
@@ -188,13 +202,11 @@ const FraudAnalytics = () => {
                   <AreaChart data={fraudData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.text.primary, 0.1)} />
                     <XAxis dataKey="date" stroke={theme.palette.text.secondary} />
-                    <YAxis stroke={theme.palette.text.secondary} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: theme.palette.background.paper,
-                        border: `1px solid ${theme.palette.divider}`,
-                      }}
+                    <YAxis 
+                      stroke={theme.palette.text.secondary}
+                      tickFormatter={(value) => `₹${value}`}
                     />
+                    <Tooltip content={<CustomTooltip />} />
                     <Legend />
                     <Area
                       type="monotone"
@@ -238,6 +250,7 @@ const FraudAnalytics = () => {
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                     >
                       {riskMetrics.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

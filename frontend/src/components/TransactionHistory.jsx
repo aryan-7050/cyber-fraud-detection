@@ -78,6 +78,7 @@ const TransactionHistory = () => {
     if (filters.search) {
       filtered = filtered.filter(t => 
         t.amount.toString().includes(filters.search) ||
+        `₹${t.amount}`.includes(filters.search) ||
         t.recipient?.name?.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
@@ -188,7 +189,7 @@ const TransactionHistory = () => {
                     </TableCell>
                     <TableCell>
                       <Typography sx={{ fontWeight: 600 }}>
-                        ${transaction.amount}
+                        ₹{transaction.amount}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -206,28 +207,28 @@ const TransactionHistory = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={transaction.riskLevel.toUpperCase()}
+                        label={transaction.riskLevel?.toUpperCase() || 'LOW'}
                         size="small"
                         sx={{
-                          bgcolor: alpha(getRiskColor(transaction.riskLevel), 0.2),
-                          color: getRiskColor(transaction.riskLevel),
+                          bgcolor: alpha(getRiskColor(transaction.riskLevel || 'low'), 0.2),
+                          color: getRiskColor(transaction.riskLevel || 'low'),
                           fontWeight: 600,
                         }}
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={transaction.status}
+                        label={transaction.status || 'pending'}
                         size="small"
                         sx={{
-                          bgcolor: transaction.status === 'completed' 
+                          bgcolor: transaction?.status === 'completed' 
                             ? alpha('#48bb78', 0.2)
-                            : transaction.status === 'flagged'
+                            : transaction?.status === 'flagged'
                             ? alpha('#f56565', 0.2)
                             : alpha('#ed8936', 0.2),
-                          color: transaction.status === 'completed' 
+                          color: transaction?.status === 'completed' 
                             ? '#48bb78'
-                            : transaction.status === 'flagged'
+                            : transaction?.status === 'flagged'
                             ? '#f56565'
                             : '#ed8936',
                         }}

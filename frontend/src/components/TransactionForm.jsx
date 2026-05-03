@@ -85,11 +85,11 @@ const TransactionForm = () => {
   const calculateFraudScore = () => {
     let score = 0;
     
-    // Amount-based scoring
+    // Amount-based scoring (in INR)
     const amount = parseFloat(formData.amount);
-    if (amount > 10000) score += 40;
-    else if (amount > 5000) score += 25;
-    else if (amount > 1000) score += 10;
+    if (amount > 800000) score += 40; // ₹8,00,000+
+    else if (amount > 400000) score += 25; // ₹4,00,000+
+    else if (amount > 80000) score += 10; // ₹80,000+
     
     // New recipient scoring
     if (formData.recipient.accountNumber && formData.recipient.accountNumber.length > 0) {
@@ -97,7 +97,7 @@ const TransactionForm = () => {
     }
     
     // Location-based scoring
-    if (formData.location.country && formData.location.country !== 'USA') {
+    if (formData.location.country && formData.location.country !== 'INDIA') {
       score += 20;
     }
     
@@ -130,8 +130,8 @@ const TransactionForm = () => {
         toast.error('Please enter a valid amount');
         return false;
       }
-      if (parseFloat(formData.amount) > 50000) {
-        toast.error('Amount exceeds maximum limit of $50,000');
+      if (parseFloat(formData.amount) > 4000000) {
+        toast.error('Amount exceeds maximum limit of ₹40,00,000');
         return false;
       }
       return true;
@@ -210,7 +210,7 @@ const TransactionForm = () => {
           <div>
             <strong>✓ Transaction Completed!</strong>
             <br />
-            Amount: ${formData.amount}
+            Amount: ₹{formData.amount}
             <br />
             Recipient: {formData.recipient.name}
           </div>,
@@ -238,7 +238,7 @@ const TransactionForm = () => {
             <Box>
               <TextField
                 fullWidth
-                label="Transaction Amount"
+                label="Transaction Amount (₹)"
                 name="amount"
                 type="number"
                 value={formData.amount}
@@ -253,7 +253,7 @@ const TransactionForm = () => {
                 }}
                 placeholder="0.00"
                 sx={{ mb: 3 }}
-                helperText="Enter the amount to transfer (max $50,000)"
+                helperText="Enter the amount to transfer (max ₹40,00,000)"
               />
               
               <FormControl fullWidth sx={{ mb: 3 }}>
@@ -270,7 +270,7 @@ const TransactionForm = () => {
                 </Select>
               </FormControl>
               
-              {parseFloat(formData.amount) > 5000 && (
+              {parseFloat(formData.amount) > 400000 && (
                 <Alert severity="warning" icon={<Warning />} sx={{ mb: 2 }}>
                   Large transaction amount detected. Additional verification may be required.
                 </Alert>
@@ -585,7 +585,7 @@ const TransactionForm = () => {
                   <Grid container spacing={1}>
                     <Grid item xs={6}>
                       <Typography variant="caption" color="text.secondary">Amount:</Typography>
-                      <Typography variant="body2" fontWeight={600}>${formData.amount}</Typography>
+                      <Typography variant="body2" fontWeight={600}>₹{formData.amount}</Typography>
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="caption" color="text.secondary">Type:</Typography>
