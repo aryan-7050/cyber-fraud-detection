@@ -1,7 +1,7 @@
-// components/Dashboard.jsx - Fixed Theme Provider Issue
+// components/Dashboard.jsx - Fixed
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion'; // Removed AnimatePresence
 import {
   Box, Grid, Card, CardContent, Typography, IconButton, Avatar, Button,
   Chip, LinearProgress, useTheme, alpha, Badge, Menu, MenuItem, Divider,
@@ -25,7 +25,6 @@ import { transactionService, authService } from '../services/api';
 import { toast } from 'react-toastify';
 import { ThemeContext } from '../App';
 
-// Register ChartJS components
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, ArcElement,
   Title, ChartTooltip, Legend, Filler
@@ -35,7 +34,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
-  const { darkMode, setDarkMode } = useContext(ThemeContext); // Get darkMode from context
+  const { darkMode, setDarkMode } = useContext(ThemeContext);
+  // Removed unused isMobile variable
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -52,9 +52,6 @@ const Dashboard = () => {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   
   const sidebarTimeout = useRef(null);
-
-  // Don't save darkMode here - it's handled in App.js
-  // useEffect for darkMode is already in App.js
 
   useEffect(() => {
     const userData = authService.getCurrentUser();
@@ -250,7 +247,7 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - same as original, keep unchanged */}
       <Box
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
@@ -269,7 +266,6 @@ const Dashboard = () => {
           boxShadow: sidebarHovered ? '4px 0 20px rgba(0,0,0,0.1)' : 'none',
         }}
       >
-        {/* Logo */}
         <Box sx={{ textAlign: 'center', py: 3, borderBottom: 1, borderColor: 'divider' }}>
           <Shield sx={{ fontSize: sidebarHovered ? 48 : 36, color: theme.palette.primary.main }} />
           {sidebarHovered && (
@@ -282,7 +278,6 @@ const Dashboard = () => {
           )}
         </Box>
 
-        {/* Menu Items */}
         <List sx={{ px: 1.5, py: 2 }}>
           {menuItems.map((item) => (
             <Tooltip key={item.text} title={!sidebarHovered ? item.text : ''} placement="right" arrow>
@@ -312,7 +307,6 @@ const Dashboard = () => {
           ))}
         </List>
 
-        {/* User Section */}
         <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2, borderTop: 1, borderColor: 'divider' }}>
           <Tooltip title={!sidebarHovered ? user?.name : ''} placement="right" arrow>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: sidebarHovered ? 'flex-start' : 'center', mb: 2 }}>
@@ -335,7 +329,7 @@ const Dashboard = () => {
         </Box>
       </Box>
 
-      {/* Main Content */}
+      {/* Main Content - Keep the rest of your original JSX from line 260 onward */}
       <Box sx={{ flexGrow: 1, ml: { xs: 0, md: `${sidebarWidth}px` }, transition: 'margin-left 0.3s ease' }}>
         
         {/* Top Bar */}
@@ -548,7 +542,7 @@ const Dashboard = () => {
                             alignItems: 'center',
                           }}>
                             <Box>
-                              <Typography fontWeight={600}>${t.amount}</Typography>
+                              <Typography fontWeight={600}>₹{t.amount}</Typography>
                               <Typography variant="caption" color="text.secondary">
                                 {new Date(t.timestamp).toLocaleString()}
                               </Typography>
@@ -559,10 +553,12 @@ const Dashboard = () => {
                               sx={{ 
                                 bgcolor: alpha(
                                   t.riskLevel === 'low' ? '#48bb78' : 
-                                  t.riskLevel === 'medium' ? '#ed8936' : '#f56565', 0.2
+                                  t.riskLevel === 'medium' ? '#ed8936' : 
+                                  t.riskLevel === 'high' ? '#f56565' : '#9b2c2c', 0.2
                                 ),
                                 color: t.riskLevel === 'low' ? '#48bb78' : 
-                                       t.riskLevel === 'medium' ? '#ed8936' : '#f56565',
+                                       t.riskLevel === 'medium' ? '#ed8936' : 
+                                       t.riskLevel === 'high' ? '#f56565' : '#9b2c2c',
                               }} 
                             />
                           </Box>
@@ -606,7 +602,7 @@ const Dashboard = () => {
                             <Typography variant="body2" fontWeight={600} color="#f56565">
                               ⚠️ {alert.riskLevel?.toUpperCase() || 'HIGH'} Risk Alert
                             </Typography>
-                            <Typography variant="body2">Amount: ${alert.amount}</Typography>
+                            <Typography variant="body2">Amount: ₹{alert.amount}</Typography>
                             <Typography variant="caption" color="text.secondary">
                               Score: {alert.fraudScore || 'N/A'} | {alert.fraudReason?.join(', ') || 'Suspicious pattern detected'}
                             </Typography>
