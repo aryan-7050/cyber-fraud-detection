@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Removed useCallback
 import {
   Box,
   Card,
@@ -23,20 +23,15 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Psychology,
-  TrendingUp,
-  TrendingDown,
   Warning,
   CheckCircle,
   ShowChart,
   ModelTraining,
   AutoAwesome,
-  Speed,
-  Analytics,
   Refresh,
   Download,
   Share,
-  Whatshot,
-} from '@mui/icons-material';
+} from '@mui/icons-material'; // Removed TrendingUp, TrendingDown, Speed, Analytics, Whatshot
 import { transactionService } from '../services/api';
 import { toast } from 'react-toastify';
 
@@ -62,24 +57,6 @@ const AIDetection = () => {
     falseNegative: 3.1,
   });
 
-  useEffect(() => {
-    fetchTransactions();
-    if (autoScan) {
-      const interval = setInterval(() => {
-        if (transactions.length > 0 && !loading) {
-          const unanalyzedTx = transactions.filter(t => 
-            !mlPredictions.find(p => p.transactionId === t._id)
-          );
-          if (unanalyzedTx.length > 0) {
-            const randomTx = unanalyzedTx[Math.floor(Math.random() * unanalyzedTx.length)];
-            runMLPrediction(randomTx);
-          }
-        }
-      }, 15000);
-      return () => clearInterval(interval);
-    }
-  }, [transactions, autoScan, mlPredictions.length]);
-  
   const fetchTransactions = async () => {
     try {
       const response = await transactionService.getUserTransactions({ limit: 30 });
@@ -89,8 +66,8 @@ const AIDetection = () => {
       toast.error('Failed to fetch transactions');
     }
   };
-  
-  const runMLPrediction = async (transaction) => {
+
+  const runMLPrediction = useCallback(async (transaction) => {
     setLoading(true);
     setSelectedTransaction(transaction);
     
@@ -173,7 +150,27 @@ const AIDetection = () => {
         );
       }
     }, 1500);
-  };
+  }, [riskThreshold, autoScan]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  useEffect(() => {
+    if (!autoScan || loading || transactions.length === 0) return;
+    
+    const interval = setInterval(() => {
+      const unanalyzedTx = transactions.filter(t => 
+        !mlPredictions.find(p => p.transactionId === t._id)
+      );
+      if (unanalyzedTx.length > 0) {
+        const randomTx = unanalyzedTx[Math.floor(Math.random() * unanalyzedTx.length)];
+        runMLPrediction(randomTx);
+      }
+    }, 15000);
+    
+    return () => clearInterval(interval);
+  }, [transactions, autoScan, loading, mlPredictions, runMLPrediction]);
   
   const getRiskColor = (probability) => {
     if (probability > 0.7) return '#f56565';
