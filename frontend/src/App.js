@@ -20,6 +20,7 @@ const SecuritySettings = lazy(() => import('./components/SecuritySettings'));
 const AIDetection = lazy(() => import('./components/AIDetection'));
 const PerformanceMonitor = lazy(() => import('./components/PerformanceMonitor'));
 const FraudHeatmap = lazy(() => import('./components/FraudHeatmap'));
+const PhishingDetector = lazy(() => import('./components/PhishingDetector'));
 
 export const ThemeContext = createContext();
 export const NotificationContext = createContext();
@@ -77,7 +78,7 @@ const App = () => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
-  
+
   const [notifications, setNotifications] = useState([]);
   const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
 
@@ -89,10 +90,10 @@ const App = () => {
   useEffect(() => {
     const handleOnline = () => setOnlineStatus(true);
     const handleOffline = () => setOnlineStatus(false);
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
@@ -206,7 +207,7 @@ const App = () => {
   const isAuthenticated = () => {
     const token = localStorage.getItem('token');
     if (!token) return false;
-    
+
     // Check token expiry
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -253,6 +254,9 @@ const App = () => {
                       } />
                       <Route path="/performance" element={
                         <ProtectedRoute><PerformanceMonitor /></ProtectedRoute>
+                      } />
+                      <Route path="/phishing-detector" element={
+                        <ProtectedRoute><PhishingDetector /></ProtectedRoute>
                       } />
                       <Route path="/heatmap" element={
                         <ProtectedRoute><FraudHeatmap /></ProtectedRoute>

@@ -14,8 +14,8 @@ import {
   ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
+  CircularProgress,
   useTheme,
-
 } from '@mui/material';
 import {
   Security,
@@ -26,9 +26,12 @@ import {
   Devices,
   Notifications,
   History,
+  CheckCircle,
+  ErrorOutline,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import CryptoJS from 'crypto-js';
 
 const SecuritySettings = () => {
   const theme = useTheme();
@@ -43,6 +46,11 @@ const SecuritySettings = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Dark Web Password Check states
+  const [passwordToCheck, setPasswordToCheck] = useState('');
+  const [passwordCheckResult, setPasswordCheckResult] = useState(null);
+  const [checkingPassword, setCheckingPassword] = useState(false);
 
   const handleToggle = (setting) => {
     setSettings({ ...settings, [setting]: !settings[setting] });
@@ -62,6 +70,29 @@ const SecuritySettings = () => {
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
+  };
+
+  const checkPasswordBreach = async (password) => {
+    if (!password) return;
+    setCheckingPassword(true);
+    try {
+      const sha1 = CryptoJS.SHA1(password).toString(CryptoJS.enc.Hex).toUpperCase();
+      const prefix = sha1.slice(0, 5);
+      const suffix = sha1.slice(5);
+      const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+      const text = await response.text();
+      const found = text.split('\n').some(line => line.split(':')[0] === suffix);
+      setPasswordCheckResult({
+        isBreached: found,
+        message: found 
+          ? '⚠️ This password has appeared in known data breaches. Please choose a stronger password.' 
+          : '✓ Password not found in any known breaches. Good!'
+      });
+    } catch (err) {
+      setPasswordCheckResult({ isBreached: false, message: 'Unable to check. Try again later.' });
+    } finally {
+      setCheckingPassword(false);
+    }
   };
 
   const securitySettings = [
@@ -192,6 +223,50 @@ const SecuritySettings = () => {
                   </React.Fragment>
                 ))}
               </List>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Dark Web Password Check */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Security color="primary" />
+                Dark Web Password Check
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Check if your password has been leaked in any data breaches (powered by HaveIBeenPwned).
+              </Typography>
+              <TextField
+                fullWidth
+                type="password"
+                label="Enter password to check"
+                value={passwordToCheck}
+                onChange={(e) => setPasswordToCheck(e.target.value)}
+                sx={{ mb: 2 }}
+              />
+              <Button 
+                variant="outlined" 
+                onClick={() => checkPasswordBreach(passwordToCheck)}
+                disabled={!passwordToCheck || checkingPassword}
+                startIcon={checkingPassword ? <CircularProgress size={16} /> : <Security />}
+              >
+                Check Password
+              </Button>
+              {passwordCheckResult && (
+                <Alert 
+                  severity={passwordCheckResult.isBreached ? 'error' : 'success'} 
+                  sx={{ mt: 2 }}
+                  icon={passwordCheckResult.isBreached ? <ErrorOutline /> : <CheckCircle />}
+                >
+                  {passwordCheckResult.message}
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </motion.div>

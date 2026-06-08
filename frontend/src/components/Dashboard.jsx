@@ -12,7 +12,7 @@ import {
 import {
   TrendingUp, TrendingDown, Warning, Security, AccountBalance, AttachMoney,
   Settings, Logout, Add, Notifications, DarkMode, LightMode, Dashboard as DashboardIcon,
-  History, Analytics, Speed, Shield, Refresh,
+  History, Analytics, Speed, Shield, Refresh, LinkOff,
   Menu as MenuIcon, Close, QrCodeScanner,
 } from '@mui/icons-material';
 import { Line, Doughnut } from 'react-chartjs-2';
@@ -138,6 +138,7 @@ const Dashboard = () => {
     { text: 'Transaction History', icon: <History />, path: '/history', color: '#4299e1' },
     { text: 'Fraud Analytics', icon: <Analytics />, path: '/analytics', color: '#ed8936' },
     { text: 'AI Detection', icon: <Speed />, path: '/ai-detection', color: '#9b59b6' },
+    { text: 'URL Safety', icon: <LinkOff />, path: '/phishing-detector', color: '#f39c12' },
     { text: 'Security Settings', icon: <Settings />, path: '/security', color: '#f39c12' },
   ];
 
@@ -340,6 +341,11 @@ const Dashboard = () => {
             </IconButton>
             <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>Dashboard</Typography>
             
+            <Tooltip title="URL Safety">
+              <IconButton onClick={() => navigate('/phishing-detector')}>
+                <LinkOff />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Scan QR">
               <IconButton onClick={() => setQrDialogOpen(true)}><QrCodeScanner /></IconButton>
             </Tooltip>
@@ -483,6 +489,9 @@ const Dashboard = () => {
             </Button>
             <Button variant="outlined" startIcon={<Speed />} onClick={() => navigate('/ai-detection')}>
               AI Detection
+            </Button>
+            <Button variant="outlined" startIcon={<LinkOff />} onClick={() => navigate('/phishing-detector')}>
+              URL Safety
             </Button>
             <Button variant="outlined" startIcon={<Settings />} onClick={() => navigate('/security')}>
               Security

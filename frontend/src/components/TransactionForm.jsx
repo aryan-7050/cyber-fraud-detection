@@ -1,57 +1,23 @@
-import React, { useState, useEffect } from 'react';
+// components/TransactionForm.jsx - Fixed
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  Button,
-  InputAdornment,
-  IconButton,
-  Alert,
-  CircularProgress,
-  Stepper,
-  Step,
-  StepLabel,
-  Grid,
-  Chip,
-  Slider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Divider,
-  Paper,
-  useTheme,
-  alpha,
-  Fade,
-  Grow,
-  Slide,
+  Box, Card, CardContent, Typography, TextField, Button,
+  InputAdornment, Alert, CircularProgress, Stepper, Step, StepLabel,
+  Grid, Slider, FormControl, InputLabel, Select, MenuItem,
+  Divider, Paper, useTheme, alpha, Fade, Grow, Slide,
 } from '@mui/material';
 import {
-  AttachMoney,
-  Person,
-  AccountBalance,
-  LocationOn,
-  Public,
-  Computer,
-  Send,
-  Cancel,
-  Warning,
-  Security,
-  TrendingUp,
-  Speed,
-  CheckCircle,
-  ArrowForward,
-  ArrowBack,
-  Fingerprint,
+  AttachMoney, Person, AccountBalance, LocationOn, Public, Computer,
+  Send, Cancel, Warning, Security, Speed, ArrowForward, ArrowBack,
   VerifiedUser,
-  GpsFixed,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { transactionService } from '../services/api';
 import { toast } from 'react-toastify';
+import BehavioralTracker from './BehavioralTracker';
+import { attachDeviceInfo } from '../services/fingerprint';
+import { getCurrentLocation } from '../services/location';
 
 const TransactionForm = () => {
   const navigate = useNavigate();
@@ -60,6 +26,7 @@ const TransactionForm = () => {
   const [loading, setLoading] = useState(false);
   const [fraudScore, setFraudScore] = useState(0);
   const [showFraudWarning, setShowFraudWarning] = useState(false);
+  const [behaviorScore, setBehaviorScore] = useState(0);
   const [formData, setFormData] = useState({
     amount: '',
     type: 'transfer',
@@ -77,33 +44,33 @@ const TransactionForm = () => {
 
   const steps = ['Transaction Details', 'Recipient Info', 'Location & Review'];
 
-  // Real-time fraud score calculation
-  useEffect(() => {
-    calculateFraudScore();
-  }, [formData.amount, formData.recipient.accountNumber, formData.location.city]);
-
-  const calculateFraudScore = () => {
+  const calculateFraudScore = useCallback(() => {
     let score = 0;
     
-    // Amount-based scoring (in INR)
     const amount = parseFloat(formData.amount);
-    if (amount > 800000) score += 40; // ₹8,00,000+
-    else if (amount > 400000) score += 25; // ₹4,00,000+
-    else if (amount > 80000) score += 10; // ₹80,000+
+    if (amount > 800000) score += 40;
+    else if (amount > 400000) score += 25;
+    else if (amount > 80000) score += 10;
     
-    // New recipient scoring
     if (formData.recipient.accountNumber && formData.recipient.accountNumber.length > 0) {
       score += 15;
     }
     
-    // Location-based scoring
     if (formData.location.country && formData.location.country !== 'INDIA') {
       score += 20;
     }
     
+    if (behaviorScore > 50) {
+      score += Math.min(behaviorScore * 0.3, 25);
+    }
+    
     setFraudScore(Math.min(score, 100));
     setShowFraudWarning(score > 50);
-  };
+  }, [formData.amount, formData.recipient.accountNumber, formData.location.country, behaviorScore]);
+
+  useEffect(() => {
+    calculateFraudScore();
+  }, [calculateFraudScore]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -180,14 +147,19 @@ const TransactionForm = () => {
     setLoading(true);
     
     try {
-      const response = await transactionService.createTransaction({
+      const location = await getCurrentLocation();
+      const enrichedData = await attachDeviceInfo({
         ...formData,
         amount: parseFloat(formData.amount),
         location: {
           ...formData.location,
           ipAddress: formData.location.ipAddress || '192.168.1.1',
         },
+        locationGeo: location,
+        behavioralScore: behaviorScore,
       });
+      
+      const response = await transactionService.createTransaction(enrichedData);
       
       if (response.fraudAlert) {
         toast.error(
@@ -297,7 +269,6 @@ const TransactionForm = () => {
                     </InputAdornment>
                   ),
                 }}
-                placeholder=""
                 sx={{ mb: 3 }}
               />
               
@@ -315,7 +286,6 @@ const TransactionForm = () => {
                     </InputAdornment>
                   ),
                 }}
-                placeholder=""
                 sx={{ mb: 3 }}
               />
               
@@ -332,7 +302,6 @@ const TransactionForm = () => {
                     </InputAdornment>
                   ),
                 }}
-                placeholder=""
                 sx={{ mb: 3 }}
               />
             </Box>
@@ -357,7 +326,6 @@ const TransactionForm = () => {
                     </InputAdornment>
                   ),
                 }}
-                placeholder=""
                 sx={{ mb: 3 }}
               />
               
@@ -375,7 +343,6 @@ const TransactionForm = () => {
                     </InputAdornment>
                   ),
                 }}
-                placeholder=""
                 sx={{ mb: 3 }}
               />
               
@@ -392,7 +359,6 @@ const TransactionForm = () => {
                     </InputAdornment>
                   ),
                 }}
-                placeholder=""
                 helperText="Auto-detected if left blank"
               />
             </Box>
@@ -405,285 +371,294 @@ const TransactionForm = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.1)} 100%)`,
-        py: 4,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Animated Background */}
+    <BehavioralTracker onBehaviorScore={(score) => setBehaviorScore(score)}>
       <Box
         sx={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.1)} 100%)`,
+          py: 4,
+          position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {[...Array(30)].map((_, i) => (
-          <motion.div
-            key={i}
-            style={{
-              position: 'absolute',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main}${Math.floor(Math.random() * 50 + 10).toString(16)}, ${theme.palette.secondary.main}${Math.floor(Math.random() * 50 + 10).toString(16)})`,
-              borderRadius: '50%',
-              width: Math.random() * 150 + 50,
-              height: Math.random() * 150 + 50,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              filter: 'blur(50px)',
-              opacity: 0.1,
-            }}
-            animate={{
-              y: [0, Math.random() * 100 - 50],
-              x: [0, Math.random() * 100 - 50],
-            }}
-            transition={{
-              duration: Math.random() * 20 + 20,
-              repeat: Infinity,
-              repeatType: 'reverse',
-            }}
-          />
-        ))}
-      </Box>
-
-      <Grow in={true} timeout={500}>
-        <Card
+        {/* Animated Background */}
+        <Box
           sx={{
-            maxWidth: 700,
+            position: 'absolute',
             width: '100%',
-            mx: 2,
-            backdropFilter: 'blur(10px)',
-            background: alpha(theme.palette.background.paper, 0.95),
-            borderRadius: 4,
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            position: 'relative',
-            zIndex: 1,
-            overflow: 'visible',
+            height: '100%',
+            overflow: 'hidden',
           }}
         >
-          <CardContent sx={{ p: 4 }}>
-            {/* Header */}
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <motion.div
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Security sx={{ fontSize: 50, color: theme.palette.primary.main, mb: 2 }} />
-              </motion.div>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 800,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  color: 'transparent',
-                }}
-              >
-                New Transaction
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Securely transfer funds with AI-powered fraud detection
-              </Typography>
-            </Box>
+          {[...Array(30)].map((_, i) => (
+            <motion.div
+              key={i}
+              style={{
+                position: 'absolute',
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}${Math.floor(Math.random() * 50 + 10).toString(16)}, ${theme.palette.secondary.main}${Math.floor(Math.random() * 50 + 10).toString(16)})`,
+                borderRadius: '50%',
+                width: Math.random() * 150 + 50,
+                height: Math.random() * 150 + 50,
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                filter: 'blur(50px)',
+                opacity: 0.1,
+              }}
+              animate={{
+                y: [0, Math.random() * 100 - 50],
+                x: [0, Math.random() * 100 - 50],
+              }}
+              transition={{
+                duration: Math.random() * 20 + 20,
+                repeat: Infinity,
+                repeatType: 'reverse',
+              }}
+            />
+          ))}
+        </Box>
 
-            {/* Fraud Score Indicator */}
-            {fraudScore > 0 && (
-              <Slide direction="down" in={true}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    mb: 3,
-                    bgcolor: alpha(
-                      fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
-                      0.1
-                    ),
-                    border: `1px solid ${alpha(
-                      fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
-                      0.3
-                    )}`,
-                    borderRadius: 2,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Speed fontSize="small" />
-                      Risk Assessment Score
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 700,
-                        color: fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
-                      }}
-                    >
-                      {fraudScore}%
-                    </Typography>
-                  </Box>
-                  <Slider
-                    value={fraudScore}
-                    disabled
-                    sx={{
-                      color: fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
-                      '& .MuiSlider-track': {
-                        backgroundColor: fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
-                      },
-                    }}
-                  />
-                  {showFraudWarning && (
-                    <Alert severity="warning" sx={{ mt: 2 }} icon={<Warning />}>
-                      This transaction has been flagged for review. Please verify all details carefully.
-                    </Alert>
-                  )}
-                </Paper>
-              </Slide>
-            )}
-
-            {/* Stepper */}
-            <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-
-            {/* Form Content */}
-            <form onSubmit={(e) => e.preventDefault()}>
-              <AnimatePresence mode="wait">
+        <Grow in={true} timeout={500}>
+          <Card
+            sx={{
+              maxWidth: 700,
+              width: '100%',
+              mx: 2,
+              backdropFilter: 'blur(10px)',
+              background: alpha(theme.palette.background.paper, 0.95),
+              borderRadius: 4,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              zIndex: 1,
+              overflow: 'visible',
+            }}
+          >
+            <CardContent sx={{ p: 4 }}>
+              {/* Header */}
+              <Box sx={{ textAlign: 'center', mb: 4 }}>
                 <motion.div
-                  key={activeStep}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.3 }}
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
                 >
-                  {getStepContent(activeStep)}
+                  <Security sx={{ fontSize: 50, color: theme.palette.primary.main, mb: 2 }} />
                 </motion.div>
-              </AnimatePresence>
-
-              {/* Transaction Summary (Review Step) */}
-              {activeStep === 2 && (
-                <Paper
+                <Typography
+                  variant="h4"
                   sx={{
-                    p: 2,
-                    mt: 3,
-                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    borderRadius: 2,
+                    fontWeight: 800,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                    Transaction Summary
-                  </Typography>
-                  <Grid container spacing={1}>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary">Amount:</Typography>
-                      <Typography variant="body2" fontWeight={600}>₹{formData.amount}</Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary">Type:</Typography>
-                      <Typography variant="body2" textTransform="capitalize">{formData.type}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Divider sx={{ my: 1 }} />
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary">Recipient:</Typography>
-                      <Typography variant="body2">{formData.recipient.name}</Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary">Account:</Typography>
-                      <Typography variant="body2">****{formData.recipient.accountNumber?.slice(-4)}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography variant="caption" color="text.secondary">Location:</Typography>
-                      <Typography variant="body2">{formData.location.city}, {formData.location.country}</Typography>
-                    </Grid>
-                  </Grid>
-                </Paper>
+                  New Transaction
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Securely transfer funds with AI-powered fraud detection
+                </Typography>
+              </Box>
+
+              {/* Behavioral Score Indicator */}
+              {behaviorScore > 0 && (
+                <Alert severity={behaviorScore > 50 ? "warning" : "info"} sx={{ mb: 2 }}>
+                  <strong>Behavioral Analysis:</strong> {behaviorScore > 50 ? "Unusual patterns detected" : "Normal behavior pattern"}
+                </Alert>
               )}
 
-              {/* Navigation Buttons */}
-              <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-                {activeStep > 0 && (
-                  <Button
-                    variant="outlined"
-                    onClick={handleBack}
-                    startIcon={<ArrowBack />}
-                    sx={{ flex: 1 }}
-                  >
-                    Back
-                  </Button>
-                )}
-                
-                {activeStep < steps.length - 1 ? (
-                  <Button
-                    variant="contained"
-                    onClick={handleNext}
-                    endIcon={<ArrowForward />}
+              {/* Fraud Score Indicator */}
+              {fraudScore > 0 && (
+                <Slide direction="down" in={true}>
+                  <Paper
                     sx={{
-                      flex: 1,
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
-                      },
-                      transition: 'all 0.3s',
+                      p: 2,
+                      mb: 3,
+                      bgcolor: alpha(
+                        fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
+                        0.1
+                      ),
+                      border: `1px solid ${alpha(
+                        fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
+                        0.3
+                      )}`,
+                      borderRadius: 2,
                     }}
                   >
-                    Continue
-                  </Button>
-                ) : (
-                  <Button
-                    variant="contained"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    startIcon={loading ? <CircularProgress size={20} /> : <Send />}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Speed fontSize="small" />
+                        Risk Assessment Score
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 700,
+                          color: fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
+                        }}
+                      >
+                        {fraudScore}%
+                      </Typography>
+                    </Box>
+                    <Slider
+                      value={fraudScore}
+                      disabled
+                      sx={{
+                        color: fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
+                        '& .MuiSlider-track': {
+                          backgroundColor: fraudScore > 70 ? '#f56565' : fraudScore > 40 ? '#ed8936' : '#48bb78',
+                        },
+                      }}
+                    />
+                    {showFraudWarning && (
+                      <Alert severity="warning" sx={{ mt: 2 }} icon={<Warning />}>
+                        This transaction has been flagged for review. Please verify all details carefully.
+                      </Alert>
+                    )}
+                  </Paper>
+                </Slide>
+              )}
+
+              {/* Stepper */}
+              <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
+                {steps.map((label) => (
+                  <Step key={label}>
+                    <StepLabel>{label}</StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+
+              {/* Form Content */}
+              <form onSubmit={(e) => e.preventDefault()}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeStep}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {getStepContent(activeStep)}
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Transaction Summary (Review Step) */}
+                {activeStep === 2 && (
+                  <Paper
                     sx={{
-                      flex: 1,
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
-                      },
-                      transition: 'all 0.3s',
+                      p: 2,
+                      mt: 3,
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      borderRadius: 2,
                     }}
                   >
-                    {loading ? 'Processing...' : 'Submit Transaction'}
-                  </Button>
+                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                      Transaction Summary
+                    </Typography>
+                    <Grid container spacing={1}>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Amount:</Typography>
+                        <Typography variant="body2" fontWeight={600}>₹{formData.amount}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Type:</Typography>
+                        <Typography variant="body2" textTransform="capitalize">{formData.type}</Typography>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Divider sx={{ my: 1 }} />
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Recipient:</Typography>
+                        <Typography variant="body2">{formData.recipient.name}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Account:</Typography>
+                        <Typography variant="body2">****{formData.recipient.accountNumber?.slice(-4)}</Typography>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Typography variant="caption" color="text.secondary">Location:</Typography>
+                        <Typography variant="body2">{formData.location.city}, {formData.location.country}</Typography>
+                      </Grid>
+                    </Grid>
+                  </Paper>
                 )}
+
+                {/* Navigation Buttons */}
+                <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
+                  {activeStep > 0 && (
+                    <Button
+                      variant="outlined"
+                      onClick={handleBack}
+                      startIcon={<ArrowBack />}
+                      sx={{ flex: 1 }}
+                    >
+                      Back
+                    </Button>
+                  )}
+                  
+                  {activeStep < steps.length - 1 ? (
+                    <Button
+                      variant="contained"
+                      onClick={handleNext}
+                      endIcon={<ArrowForward />}
+                      sx={{
+                        flex: 1,
+                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
+                        },
+                        transition: 'all 0.3s',
+                      }}
+                    >
+                      Continue
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      startIcon={loading ? <CircularProgress size={20} /> : <Send />}
+                      sx={{
+                        flex: 1,
+                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
+                        },
+                        transition: 'all 0.3s',
+                      }}
+                    >
+                      {loading ? 'Processing...' : 'Submit Transaction'}
+                    </Button>
+                  )}
+                </Box>
+              </form>
+
+              {/* Security Note */}
+              <Box sx={{ mt: 3, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                  <VerifiedUser sx={{ fontSize: 14 }} />
+                  Secure transaction with end-to-end encryption
+                </Typography>
               </Box>
-            </form>
 
-            {/* Security Note */}
-            <Box sx={{ mt: 3, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                <VerifiedUser sx={{ fontSize: 14 }} />
-                Secure transaction with end-to-end encryption
-              </Typography>
-            </Box>
-
-            {/* Cancel Button */}
-            <Button
-              variant="text"
-              onClick={() => navigate('/dashboard')}
-              startIcon={<Cancel />}
-              fullWidth
-              sx={{ mt: 2 }}
-            >
-              Cancel Transaction
-            </Button>
-          </CardContent>
-        </Card>
-      </Grow>
-    </Box>
+              {/* Cancel Button */}
+              <Button
+                variant="text"
+                onClick={() => navigate('/dashboard')}
+                startIcon={<Cancel />}
+                fullWidth
+                sx={{ mt: 2 }}
+              >
+                Cancel Transaction
+              </Button>
+            </CardContent>
+          </Card>
+        </Grow>
+      </Box>
+    </BehavioralTracker>
   );
 };
 

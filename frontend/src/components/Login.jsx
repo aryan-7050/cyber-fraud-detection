@@ -25,6 +25,8 @@ import {
 import { motion } from 'framer-motion';
 import { authService } from '../services/api';
 import { toast } from 'react-toastify';
+import { attachDeviceInfo } from '../services/fingerprint';
+import { getCurrentLocation } from '../services/location';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -45,7 +47,17 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await authService.login(formData);
+      // Get user's location for geo-fraud detection
+      const location = await getCurrentLocation();
+      
+      // Attach device fingerprint and other device info
+      const enrichedData = await attachDeviceInfo({ 
+        ...formData, 
+        locationGeo: location 
+      });
+      
+      const response = await authService.login(enrichedData);
+      
       if (response.success) {
         toast.success('Welcome back! 🎉');
         navigate('/dashboard');
